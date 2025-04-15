@@ -1,3 +1,6 @@
+
+
+
 %% Initialize
 tmp = matlab.desktop.editor.getActive;
 dir = fileparts(tmp.Filename);
@@ -21,103 +24,66 @@ for j = 1:1
     in_prog_func = @(app) dfunc(app); % in progress plot
     post_func = @(app) dfunc(app); % function working at the "draw button" pushed.
     motive = Connector_Natnet_sim(1, dt, 0); % imitation of Motive camera (motion capture system)
-    logger1 = LOGGER(1, size(ts:dt:te, 2), 0, [],[]); % instance of LOOGER class for data logging
-    logger2 = LOGGER(1, size(ts:dt:te, 2), 0, [],[]); % instance of LOOGER class for data logging
+    logger = LOGGER(1, size(ts:dt:te, 2), 0, [],[]); % instance of LOOGER class for data logging
     initial_state.p = arranged_position([0, 0], 1, 1, 0);
     initial_state.q = [1; 0; 0; 0];
     initial_state.v = [0; 0; 0];
     initial_state.w = [0; 0; 0];
 
-    agent(1) = DRONE;
-    agent(2) = DRONE;
-    % agent.parameter = DRONE_PARAM("DIATONE","row","mass",0.58);
-    % agent(1).parameter = DRONE_PARAM("DIATONE");
-    agent(1).parameter = DRONE_PARAM("DIATONE");
+    exp_data = load("Data/OriginalData/exp_4_MEC/exp_test_circle.mat");
 
-    agent(2).parameter = DRONE_PARAM("DIATONE","mass",0.4);
-    agent(1).plant = MODEL_CLASS(agent(1),Model_EulerAngle(dt, initial_state, 1)); % Model_Quat13
-    agent(2).plant = MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)); % Model_Quat13
-
-    agent(1).estimator = EKF(agent(1), Estimator_EKF(agent(1),dt,MODEL_CLASS(agent(1),Model_EulerAngle(dt, initial_state, 1)),["p", "q"]));
-    % agent(2).estimator = EKF(agent(2), Estimator_EKF(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
-    agent(2).estimator = EKF_4_MEC_learning(agent(2), Estimator_EKF(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
+    agent = DRONE;
+    agent.parameter = DRONE_PARAM("DIATONE");
+    agent.plant = MODEL_CLASS(agent,Model_EulerAngle(dt, initial_state, 1)); % Model_Quat13
+    agent.estimator = EKF(agent, Estimator_EKF(agent,dt,MODEL_CLASS(agent,Model_EulerAngle(dt, initial_state, 1)),["p", "q"]));
+    agent.sensor = DIRECT_SENSOR(agent, 0.0); % modeファイル内で回すとき
     
-    % agent(2).estimator = NN_ESTIMATOR(agent(2), Estimator_NN(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
-
-
-    agent(1).sensor = DIRECT_SENSOR(agent(1), 0.0); % modeファイル内で回すとき
-    agent(2).sensor = DIRECT_SENSOR(agent(2), 0.0); % modeファイル内で回すとき
-
     num = j;
     reference_file = strcat("Exp_2_4_", num2str(num));
-    agent(1).reference = TIME_VARYING_REFERENCE(agent(1),{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
-    agent(2).reference = TIME_VARYING_REFERENCE(agent(2),{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
-    % agent(1).reference = TIME_VARYING_REFERENCE(agent(1),{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5]},"HL"});
-    % agent(2).reference = TIME_VARYING_REFERENCE(agent(2),{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5]},"HL"});
-    % agent(1).reference = TIME_VARYING_REFERENCE(agent(1),{"gen_ref_p2p",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
-    % agent(2).reference = TIME_VARYING_REFERENCE(agent(2),{"gen_ref_p2p",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
+    agent.reference = TIME_VARYING_REFERENCE(agent,{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
+    % agent.reference = TIME_VARYING_REFERENCE(agent,{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5]},"HL"});
+    % agent.reference = TIME_VARYING_REFERENCE(agent,{"gen_ref_p2p",{"freq",5,"init",[0;0;1],"radius",1.0},"HL"});
     
 
-    % agent(1).reference = TIME_VARYING_REFERENCE(agent(1),{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0,"i",j},"HL"});
-    % agent(2).reference = TIME_VARYING_REFERENCE(agent(2),{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0,"i",j},"HL"});
-    % agent(1).reference = TIME_VARYING_REFERENCE(agent(1),{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5],"i",j},"HL"});
-    % agent(2).reference = TIME_VARYING_REFERENCE(agent(2),{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5],"i",j},"HL"});
-    % agent(1).reference = MY_WAY_POINT_REFERENCE(agent(1),generate_spline_curve_ref(readmatrix("waypoint.xlsx",'Sheet','origin'),1));%コマンドでシートを選びたいときは位置2を1にする
-    % agent(2).reference = MY_WAY_POINT_REFERENCE(agent(2),generate_spline_curve_ref(readmatrix("waypoint.xlsx",'Sheet','origin'),1));%コマンドでシートを選びたいときは位置2を1にする
+    % agent.reference = TIME_VARYING_REFERENCE(agent,{"gen_ref_circle",{"freq",5,"init",[0;0;1],"radius",1.0,"i",j},"HL"});
+    % agent.reference = TIME_VARYING_REFERENCE(agent,{"gen_ref_saddle",{"freq",5,"orig",[0;0;1],"size",[2,2,0.5],"i",j},"HL"});
+    % agent.reference = MY_WAY_POINT_REFERENCE(agent,generate_spline_curve_ref(readmatrix("waypoint.xlsx",'Sheet','origin'),1));%コマンドでシートを選びたいときは位置2を1にする
     % agent.controller = FUNCTIONAL_HLC(agent,Controller_FHL(dt));
-    agent(1).controller = FUNCTIONAL_HLC(agent(1),Controller_FHL(dt));
-    agent(2).controller = FUNCTIONAL_MECNNC(agent(2),Controller_FHLMECNN(dt));
+    agent.controller = FUNCTIONAL_HLC(agent,Controller_FHL(dt));
     
 
     Pn_estimator.state = initial_state;
-    Pa_estimator.state = initial_state;
     run("ExpBase");
 
     for i = 1:te/dt
     if i < 20 || rem(i, 10) == 0 end
         tic
 
-        %agent(2).controller.Pn_p_pre = [Pn_estimator.state.p;Pn_estimator.state.q;Pn_estimator.state.v;Pn_estimator.state.w];
-        %Pn_estimator = agent(1).estimator.do(time, 'f');
-        % agent(2).controller.Pn_p_cur = [Pn_estimator.state.p;Pn_estimator.state.q;Pn_estimator.state.v;Pn_estimator.state.w];
-        % agent(1).reference.do(time, 'f');
-        % Pn_controller = agent(1).controller.do(time, 'f');
-        % agent(1).plant.do(time, 'f');
-        % agent(2).controller.Pn_u = Pn_controller.input;
-        % 
-        % Pn_estimator.state.p
+    agent.sensor.do(time, 'f');
+    agent.sensor.result.state = exp_data.log.Data.agent.sensor.result{1,i}.state;
 
+    agent.estimator.do(time, 'f');
+    agent.estimator.result.state = exp_data.log.Data.agent.estimator.result{1,i}.state;
 
-        agent(2).controller.Pa_p_pre = Pa_estimator.state.p;
+    agent.reference.do(time, 'f');
+    agent.reference.result.state = exp_data.log.Data.agent.reference.result{1,i}.state;
 
+    agent.controller.do(time, 'f');
+    % agent.controller.result.state = exp_data.log.Data.agent.controller.result{1,i}.state;
+    agent.controller.result.input = exp_data.log.Data.agent.controller.result{1,i}.input;
 
-        agent(1).plant.do(time, 'f');%  xn[k]
-        agent(2).controller.Pn_p_cur = [agent(1,1).plant.state.p;agent(1,1).plant.state.q;agent(1,1).plant.state.v;agent(1,1).plant.state.w];
+    agent.plant.do(time, 'f');
+    % agent.plant.result.state = exp_data.log.Data.agent.plant.result{1,i}.state;
 
-        agent(2).sensor.do(time, 'f'); % 2 hxa[k]
-        Pa_estimator = agent(2).estimator.do(time, 'f');
-        agent(2).controller.Pa_p_cur = [Pa_estimator.state.p;Pa_estimator.state.q;Pa_estimator.state.v;Pa_estimator.state.w];
-        agent(2).reference.do(time, 'f');
-
-        agent(1).estimator = agent(2).estimator;%  3 un[k]
-        agent(1).reference.do(time, 'f');
-        Pn_controller = agent(1).controller.do(time, 'f');
-        agent(2).controller.Pn_u = Pn_controller.input;
-
-        agent(2).controller.do(time, 'f');% 4, 5 du[k], u[k]
-
-        agent(2).plant.do(time, 'f');% 6 xa[k+1]
-
-        logger1.logging(time, 'f', agent(1));
-        logger2.logging(time, 'f', agent(2));
-        time.t = time.t + time.dt;
+    logger.logging(time, 'f', agent);
+    time.t = time.t + time.dt;
         %pause(1)
         all = toc;
         disp([num2str(time.t)])
         
         
     end
-    logger = [logger1 logger2];
+    
     % save(strcat("Data\learning_data\data", num2str(j), ".mat"),"logger")
     save("Data\test","logger")
     % save("Data\sprine","logger")
