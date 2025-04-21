@@ -442,7 +442,7 @@ classdef LOGGER < handle % handleクラスにしないとmethodの中で値を�
       end
 
       arguments
-        option.time (1, 2) double = [0 obj.Data.t(obj.k)]
+        option.time (1, 2) double = [0 [obj.Data.t(obj.k)]]
         option.fig_num {mustBeNumeric} = 1
         option.row_col (1, 2) {mustBeNumeric} = [ceil(length(list) / min(length(list), 3)) min(length(list), 3)]
         option.color {mustBeNumeric} = 1

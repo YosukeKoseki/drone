@@ -239,12 +239,12 @@ end
 % end
 
 %%
-% set(0,'defaultAxesFontSize', 10)
-% set(0, 'DefaultLineLineWidth', 1.5);
-% logger.plot({1, "p", "er"}, {1, "input", ""},"xrange",[time.ts,time.t],"fig_num",1,"row_col",[1 2]);
-% % logger.save('HL_sim_test_1008_sigmoid');
-% app.logger = logger;
-% result_plot(app)
+set(0,'defaultAxesFontSize', 10)
+set(0, 'DefaultLineLineWidth', 1.5);
+logger.plot({1, "p", "er"}, {1, "input", ""},"xrange",[time.ts,time.t],"fig_num",1,"row_col",[1 2]);
+% logger.save('HL_sim_test_1008_sigmoid');
+app.logger = logger;
+result_plot(app)
 % 
 % % 仮想入力の描画
 % imgu = cell2mat(arrayfun(@(N) logger.Data.agent.controller.result{N}.img_input, 1:te/dt, 'UniformOutput', false));

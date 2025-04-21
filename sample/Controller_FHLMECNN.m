@@ -12,10 +12,12 @@ Controller.F4=lqrd(Ac2,Bc2,diag([100,10]),[0.1],dt);                       % ヨ
 Controller.F = blkdiag(Controller.F1,Controller.F2,Controller.F3,Controller.F4);
 
 
-MECNN = importNetworkFromONNX("..\VarietyPack\Takano\HLNN_MEC\Result\MECNN_model.onnx");
+% MECNN = importNetworkFromONNX("..\VarietyPack\Takano\HLNN_MEC\Result\MECNN_model.onnx");
+MECNN = importNetworkFromONNX("MECNN_model.onnx");
 MECNN.Initialized
 
-load("./Data/OriginalData/Ad_Bd_F.mat")
+% load("./Data/OriginalData/Ad_Bd_F.mat")
+load("Data\Ad_Bd_F.mat")
 Controller.Ad = Ad;
 Controller.Bd = Bd;
 
