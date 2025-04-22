@@ -23,8 +23,8 @@ methods
 
     function obj = FUNCTIONAL_MECNNC(self, param)
 
-        % obj.data_gen_mode = true;
-        obj.data_gen_mode = false;
+        obj.data_gen_mode = true;
+        % obj.data_gen_mode = false;
 
         obj.self = self;
         obj.param = param;
