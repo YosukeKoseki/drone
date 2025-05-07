@@ -10,12 +10,12 @@ properties
     Vs
     agent
     motive
-    MECNN
-    Pn_p_pre
-    Pa_p_pre
-    Pn_p_cur
-    Pa_p_cur
-    Pn_u
+    MECNN       % DNNアーキテクチャ
+    Pn_p_pre    % 前時刻のノミナルの位置
+    Pa_p_pre    % 前時刻のプラントの推定位置
+    Pn_p_cur    % 状態更新後のノミナルの出力（位置p，速度v，角度q，各速度w）
+    Pa_p_cur    % 状態更新後のプラントの推定値
+    Pn_u        % ノミナルのコントローラから得られた制御入力
     data_gen_mode
 end
 
@@ -25,11 +25,13 @@ methods
 
         obj.data_gen_mode = true;
         % obj.data_gen_mode = false;
+        % true:Δuを生成・保存, false:MECの検証
 
         obj.self = self;
         obj.param = param;
         obj.param.P = self.parameter.get(obj.parameter_name);
         obj.result.input = zeros(self.estimator.model.dim(2),1);
+        % ここまでは通常のHLと同じ
 
 
         initial_state.p = self.plant.state.p;

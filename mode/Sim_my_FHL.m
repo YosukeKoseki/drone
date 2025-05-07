@@ -28,19 +28,23 @@ for j = 1:1
     initial_state.v = [0; 0; 0];
     initial_state.w = [0; 0; 0];
 
+    %----------------------------
+    % agent(1) = ノミナルモデル → 通常のSimHLでの定義と同じ
+    % agent(2) = プラントモデル → あえてモデル誤差を与えたモデル
+    %----------------------------
     agent(1) = DRONE;
     agent(2) = DRONE;
     % agent.parameter = DRONE_PARAM("DIATONE","row","mass",0.58);
     % agent(1).parameter = DRONE_PARAM("DIATONE");
     agent(1).parameter = DRONE_PARAM("DIATONE");
 
-    agent(2).parameter = DRONE_PARAM("DIATONE","mass",0.4);
+    agent(2).parameter = DRONE_PARAM("DIATONE","mass",0.4); % プラントモデルにモデル誤差を与える．DRONE_PARAMのパラメータを上書きしている．
     agent(1).plant = MODEL_CLASS(agent(1),Model_EulerAngle(dt, initial_state, 1)); % Model_Quat13
     agent(2).plant = MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)); % Model_Quat13
 
     agent(1).estimator = EKF(agent(1), Estimator_EKF(agent(1),dt,MODEL_CLASS(agent(1),Model_EulerAngle(dt, initial_state, 1)),["p", "q"]));
     % agent(2).estimator = EKF(agent(2), Estimator_EKF(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
-    agent(2).estimator = EKF_4_MEC_learning(agent(2), Estimator_EKF(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
+    agent(2).estimator = EKF_4_MEC_learning(agent(2), Estimator_EKF(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));  % ただのEKFと全く同じ
     
     % agent(2).estimator = NN_ESTIMATOR(agent(2), Estimator_NN(agent(2),dt,MODEL_CLASS(agent(2),Model_EulerAngle(dt, initial_state, 2)),["p", "q"]));
 
@@ -66,10 +70,10 @@ for j = 1:1
     % agent(2).reference = MY_WAY_POINT_REFERENCE(agent(2),generate_spline_curve_ref(readmatrix("waypoint.xlsx",'Sheet','origin'),1));%コマンドでシートを選びたいときは位置2を1にする
     % agent.controller = FUNCTIONAL_HLC(agent,Controller_FHL(dt));
     agent(1).controller = FUNCTIONAL_HLC(agent(1),Controller_FHL(dt));
-    agent(2).controller = FUNCTIONAL_MECNNC(agent(2),Controller_FHLMECNN(dt));
+    agent(2).controller = FUNCTIONAL_MECNNC(agent(2),Controller_FHLMECNN(dt));  % NNMEC用のHLコントローラ
     
 
-    Pn_estimator.state = initial_state;
+    % Pn_estimator.state = initial_state; % いらなさそう 2025.05.07
     Pa_estimator.state = initial_state;
     run("ExpBase");
 
@@ -88,25 +92,28 @@ for j = 1:1
         % Pn_estimator.state.p
 
 
-        agent(2).controller.Pa_p_pre = Pa_estimator.state.p;
+        agent(2).controller.Pa_p_pre = Pa_estimator.state.p;    % 前時刻のプラントの推定位置を「プラントのコントローラ」内に格納
 
 
-        agent(1).plant.do(time, 'f');%  xn[k]
+        agent(1).plant.do(time, 'f');%  xn[k] % ノミナルの状態更新
         agent(2).controller.Pn_p_cur = [agent(1,1).plant.state.p;agent(1,1).plant.state.q;agent(1,1).plant.state.v;agent(1,1).plant.state.w];
+        % 状態更新後のノミナルの出力を「プラントのコントローラ」内に保存
 
-        agent(2).sensor.do(time, 'f'); % 2 hxa[k]
-        Pa_estimator = agent(2).estimator.do(time, 'f');
+        agent(2).sensor.do(time, 'f'); % 2 hxa[k] % プラントのセンサ情報取得
+        Pa_estimator = agent(2).estimator.do(time, 'f'); % プラントの推定器を回し，情報を取得
         agent(2).controller.Pa_p_cur = [Pa_estimator.state.p;Pa_estimator.state.q;Pa_estimator.state.v;Pa_estimator.state.w];
+        % 状態更新後のプラントの推定値を「プラントのコントローラ」内に保存
+
         agent(2).reference.do(time, 'f');
 
-        agent(1).estimator = agent(2).estimator;%  3 un[k]
+        agent(1).estimator = agent(2).estimator;%  3 un[k] % プラントの推定値をノミナルの推定値にコピー
         agent(1).reference.do(time, 'f');
-        Pn_controller = agent(1).controller.do(time, 'f');
-        agent(2).controller.Pn_u = Pn_controller.input;
+        Pn_controller = agent(1).controller.do(time, 'f'); % ノミナルのコントローラを回し，情報を取得
+        agent(2).controller.Pn_u = Pn_controller.input; % ノミナルのコントローラから得られた制御入力を，プラントの制御入力にコピー
 
-        agent(2).controller.do(time, 'f');% 4, 5 du[k], u[k]
+        agent(2).controller.do(time, 'f');% 4, 5 du[k], u[k] % プラントのコントローラ計算
 
-        agent(2).plant.do(time, 'f');% 6 xa[k+1]
+        agent(2).plant.do(time, 'f');% 6 xa[k+1] % プラントの状態更新
 
         logger1.logging(time, 'f', agent(1));
         logger2.logging(time, 'f', agent(2));

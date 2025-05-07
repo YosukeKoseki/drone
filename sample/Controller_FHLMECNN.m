@@ -9,12 +9,15 @@ Controller.F1=lqrd(Ac2,Bc2,diag([100,1]),[0.1],dt);                             
 Controller.F2=lqrd(Ac4,Bc4,diag([100,10,10,1]),[0.01],dt); % xdiag([100,10,10,1])
 Controller.F3=lqrd(Ac4,Bc4,diag([100,10,10,1]),[0.01],dt); % ydiag([100,10,10,1])
 Controller.F4=lqrd(Ac2,Bc2,diag([100,10]),[0.1],dt);                       % ヨー角
-Controller.F = blkdiag(Controller.F1,Controller.F2,Controller.F3,Controller.F4);
+Controller.F = blkdiag(Controller.F1,Controller.F2,Controller.F3,Controller.F4);    % フィードバックゲインをまとめる
 
 
 % MECNN = importNetworkFromONNX("..\VarietyPack\Takano\HLNN_MEC\Result\MECNN_model.onnx");
 MECNN = importNetworkFromONNX("MECNN_model.onnx");
 MECNN.Initialized
+% ここで定義されたMECNNは「dlnetworkオブジェクト」というMATLAB用のDNNアーキテクチャ
+% 層構造やハイパーパラメータ情報が入っている．
+% ここでは，事前学習済みのONNXネットワークをインポートしている
 
 % load("./Data/OriginalData/Ad_Bd_F.mat")
 load("Data\Ad_Bd_F.mat")
@@ -22,13 +25,13 @@ Controller.Ad = Ad;
 Controller.Bd = Bd;
 
 % layer =inputLayer([24 1], "SC");
-layer = inputLayer([12 1], "SC");
-Controller.MECNN = addInputLayer(MECNN,layer);
+layer = inputLayer([12 1], "SC");               % DNNの入力層 12個
+Controller.MECNN = addInputLayer(MECNN,layer);  % コントローラにDNNの情報を入れる
 
 
 syms sz1 [2 1] real
 syms sF1 [1 2] real
-[Ad1,Bd1,~,~] = ssdata(c2d(ss(Ac2,Bc2,[1,0],[0]),dt));
+[Ad1,Bd1,~,~] = ssdata(c2d(ss(Ac2,Bc2,[1,0],[0]),dt));  % 状態空間表現から係数行列A, Bを取得
 Controller.Vf = matlabFunction([-sF1*sz1, -sF1*(Ad1-Bd1*sF1)*sz1, -sF1*(Ad1-Bd1*sF1)^2*sz1, -sF1*(Ad1-Bd1*sF1)^3*sz1],"Vars",{sz1,sF1});
 % Controller.HLNN2 = addInputLayer(HLNN2,layer);
 
